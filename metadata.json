@@ -1,0 +1,6 @@
+{
+  "name": "Wantalian Home Hub",
+  "description": "A high-fidelity full-stack e-commerce experience styled with a custom orange-and-green aesthetic, featuring real-time stock registers, vendor publishing pipelines, push notifications, performance metrics, and a Gemini AI-powered home catalog recommendation engine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
