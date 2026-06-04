@@ -1,0 +1,176 @@
+{
+  "products": [
+    {
+      "id": "prod-1",
+      "name": "Aura Soundbar Pro",
+      "description": "Elegant spatial audio system featuring patented high-fidelity sonic waves, dynamic acoustic profiling, and rich walnut wood grills.",
+      "category": "Audio",
+      "price": 249.99,
+      "stock": 9,
+      "image": "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=600&auto=format&fit=crop&q=80",
+      "vendorId": "vendor-global",
+      "rating": 4.8,
+      "reviewsCount": 34,
+      "createdAt": "2026-06-04T07:51:36.364Z"
+    },
+    {
+      "id": "prod-2",
+      "name": "Nova Light Canvas",
+      "description": "Intelligent ambient modular LED light sheets that morph color palettes and shift luminances in synchronization with your environment's kinetic vibes.",
+      "category": "Home Ambient",
+      "price": 139.5,
+      "stock": 25,
+      "image": "https://images.unsplash.com/photo-1507646227500-4d389b0012be?w=600&auto=format&fit=crop&q=80",
+      "vendorId": "vendor-global",
+      "rating": 4.6,
+      "reviewsCount": 19,
+      "createdAt": "2026-06-04T07:51:36.364Z"
+    },
+    {
+      "id": "prod-3",
+      "name": "Zenith Ergo Split Keyboard",
+      "description": "Ergonomic mechanical split-layout keyboard crafted in aviation-grade dark gray aluminum with hot-swappable clicky gold switches and customizable ortholinear layout.",
+      "category": "Tech Gear",
+      "price": 189,
+      "stock": 8,
+      "image": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&auto=format&fit=crop&q=80",
+      "vendorId": "vendor-global",
+      "rating": 4.9,
+      "reviewsCount": 42,
+      "createdAt": "2026-06-04T07:51:36.364Z"
+    },
+    {
+      "id": "prod-4",
+      "name": "Nebula Desk Mat (Extra Large)",
+      "description": "Premium smooth mouse mat woven with low-friction silver-thread microtexture, non-slip rubber padding, and high-fidelity deep space print.",
+      "category": "Accessories",
+      "price": 39,
+      "stock": 40,
+      "image": "https://images.unsplash.com/photo-1616440347437-b1c73416efc2?w=600&auto=format&fit=crop&q=80",
+      "vendorId": "vendor-global",
+      "rating": 4.7,
+      "reviewsCount": 112,
+      "createdAt": "2026-06-04T07:51:36.364Z"
+    },
+    {
+      "id": "prod-5",
+      "name": "Chronos Light Kinetic Watch",
+      "description": "A timeless kinetic piece charged entirely by ambient light, encased in premium brushed metal, sapphire crystal glass, and paired with structured leather strap.",
+      "category": "Apparel",
+      "price": 310,
+      "stock": 5,
+      "image": "https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=600&auto=format&fit=crop&q=80",
+      "vendorId": "vendor-global",
+      "rating": 4.9,
+      "reviewsCount": 15,
+      "createdAt": "2026-06-04T07:51:36.364Z"
+    },
+    {
+      "id": "prod-6",
+      "name": "EcoThread Commuter Pack",
+      "description": "Weatherproof modular commuter daypack constructed 100% from ocean-bound recycled plastic fibers with magnetic utility fixtures and custom laptop pocket.",
+      "category": "Accessories",
+      "price": 85,
+      "stock": 18,
+      "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=80",
+      "vendorId": "vendor-global",
+      "rating": 4.5,
+      "reviewsCount": 61,
+      "createdAt": "2026-06-04T07:51:36.364Z"
+    }
+  ],
+  "orders": [
+    {
+      "id": "ord-133783",
+      "customerName": "Guest Buyer",
+      "customerEmail": "guest@wantalian.com",
+      "items": [
+        {
+          "productId": "prod-1",
+          "name": "Aura Soundbar Pro",
+          "price": 249.99,
+          "quantity": 1
+        }
+      ],
+      "total": 249.99,
+      "status": "pending",
+      "date": "2026-06-04T07:52:39.336Z",
+      "cardLast4": "M-Pesa: 0712345678 (Ref: SD34LM90KL)",
+      "address": "Nairobi County, Kilimani, Kilimani Road, Crescent Court Block C, Room 4"
+    },
+    {
+      "id": "ord-285014",
+      "customerName": "Jane Doe Test Suite",
+      "customerEmail": "janedoe@domain.com",
+      "items": [
+        {
+          "productId": "prod-1",
+          "name": "Aura Soundbar Pro",
+          "price": 249.99,
+          "quantity": 2
+        }
+      ],
+      "total": 499.98,
+      "status": "pending",
+      "date": "2026-06-04T09:00:55.124Z",
+      "cardLast4": "M-Pesa: 0712345678 (Ref: XYZ1234567)",
+      "address": "Kiambu County, Thika, Spot 1"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif-vendor-order-1780563655125",
+      "orderId": "ord-285014",
+      "title": "New Store Order Placed! 🛒",
+      "message": "Vendor Alert: Order #ord-285014 was placed by Jane Doe Test Suite containing: Aura Soundbar Pro (2x) for a total value of KSh 499.98.",
+      "timestamp": "2026-06-04T09:00:55.125Z",
+      "status": "unread"
+    },
+    {
+      "id": "notif-1780563655124-c",
+      "orderId": "ord-285014",
+      "title": "Order Placed Successfully! 🎉",
+      "message": "Your payment of KSh 499.98 has been secured. Order #ord-285014 is being processed.",
+      "timestamp": "2026-06-04T09:00:55.125Z",
+      "status": "unread"
+    },
+    {
+      "id": "notif-vendor-order-1780559559371",
+      "orderId": "ord-133783",
+      "title": "New Store Order Placed! 🛒",
+      "message": "Vendor Alert: Order #ord-133783 was placed by Guest Buyer containing: Aura Soundbar Pro (1x) for a total value of KSh 249.99.",
+      "timestamp": "2026-06-04T07:52:39.371Z",
+      "status": "unread"
+    },
+    {
+      "id": "notif-1780559559336-c",
+      "orderId": "ord-133783",
+      "title": "Order Placed Successfully! 🎉",
+      "message": "Your payment of KSh 249.99 has been secured. Order #ord-133783 is being processed.",
+      "timestamp": "2026-06-04T07:52:39.371Z",
+      "status": "unread"
+    },
+    {
+      "id": "notif-init",
+      "orderId": "init",
+      "title": "Welcome to OmniShop",
+      "message": "OmniShop Store engine active. Enjoy full inventory, ML recommendations, analytics, and vendor utilities!",
+      "timestamp": "2026-06-04T07:51:36.366Z",
+      "status": "unread"
+    }
+  ],
+  "logs": [
+    {
+      "id": "log-1780559518920-o3l0",
+      "productId": "prod-1",
+      "actionType": "cart",
+      "timestamp": "2026-06-04T07:51:58.920Z"
+    },
+    {
+      "id": "log-1780559560859-4omw",
+      "productId": "prod-1",
+      "actionType": "purchase",
+      "timestamp": "2026-06-04T07:52:40.859Z"
+    }
+  ]
+}

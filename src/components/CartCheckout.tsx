@@ -263,9 +263,13 @@ export default function CartCheckout({
       }
 
       if (!resp.ok) {
-        const errorMsg = isJson && body?.error 
+        let errorMsg = isJson && body?.error 
           ? body.error 
           : `Server error code ${resp.status}: ${resText.slice(0, 160) || "Empty response body"}`;
+        
+        if (resp.status === 404) {
+          errorMsg = "The development container was restarted/rebuilt. Please reload (Refresh) this browser tab to update your secure payment connection and complete your checkout! (Code 404)";
+        }
         throw new Error(errorMsg);
       }
 
