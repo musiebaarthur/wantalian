@@ -290,145 +290,178 @@ async function startServer() {
 
   // 5. CUSTOMER: SECURE PAYMENT GATEWAY & CHECKOUT SIMULATOR (FULL TRANSACTION LOGIC)
   app.post("/api/checkout", (req, res) => {
-    const { 
-      customerName, 
-      customerEmail, 
-      cardNum, 
-      cardExpiry, 
-      cardCvv, 
-      address, 
-      cart, 
-      paymentMethod = "mpesa", 
-      mpesaPhone, 
-      mpesaTxCode 
-    } = req.body;
+    try {
+      const { 
+        customerName, 
+        customerEmail, 
+        cardNum, 
+        cardExpiry, 
+        cardCvv, 
+        address, 
+        cart, 
+        paymentMethod = "mpesa", 
+        mpesaPhone, 
+        mpesaTxCode 
+      } = req.body;
 
-    if (!customerName || !customerEmail || !address || !cart || !cart.length) {
-      return res.status(400).json({ error: "Checkout payload incomplete. Please check delivery inputs." });
+      if (!customerName || !customerEmail || !address || !cart || !cart.length) {
+        return res.status(400).json({ error: "Checkout payload incomplete. Please check delivery inputs." });
+      }
+
+      let billingRef = "M-Pesa Pay";
+
+      if (paymentMethod === "card") {
+        if (!cardNum || !cardExpiry || !cardCvv) {
+          return res.status(400).json({ error: "Credit card details are required for Card billing." });
+        }
+        // Secure Credit Card Validation (Mock Integrity check: strip symbols, check length)
+        const sanitizedCard = String(cardNum).replace(/\s+/g, "");
+        if (sanitizedCard.length < 15 || sanitizedCard.length > 16 || isNaN(Number(sanitizedCard))) {
+          return res.status(400).json({ error: "Secure Gate: Invalid Credit Card Number format." });
+        }
+
+        const sanitizedCvv = String(cardCvv).trim();
+        if (sanitizedCvv.length < 3 || sanitizedCvv.length > 4 || isNaN(Number(sanitizedCvv))) {
+          return res.status(400).json({ error: "Secure Gate: Invalid CVV security code format." });
+        }
+        billingRef = `xxxx-xxxx-xxxx-${sanitizedCard.slice(-4)}`;
+      } else {
+        // M-Pesa Validation
+        if (!mpesaPhone || !mpesaTxCode) {
+          return res.status(400).json({ error: "M-Pesa Phone number and transaction code are required." });
+        }
+        const mpesaPhoneStr = String(mpesaPhone);
+        const mpesaTxCodeStr = String(mpesaTxCode);
+        const sanitizedPhone = mpesaPhoneStr.replace(/\s+/g, "");
+        if (sanitizedPhone.length < 9) {
+          return res.status(400).json({ error: "Invalid M-Pesa phone number format." });
+        }
+        const cleanTxCode = mpesaTxCodeStr.trim().toUpperCase();
+        if (cleanTxCode.length < 8) {
+          return res.status(400).json({ error: "Verify Reference: M-Pesa receipt code must be at least 8 alphanumeric characters." });
+        }
+        billingRef = `M-Pesa: ${sanitizedPhone} (Ref: ${cleanTxCode})`;
+      }
+
+      // Verify stock and calculate totals
+      if (!Array.isArray(cart)) {
+        return res.status(400).json({ error: "Checkout aborted: The cart structure provided is invalid." });
+      }
+
+      if (!db_memory.products) {
+        db_memory.products = [];
+      }
+
+      const itemsToBuy: { product: Product; quantity: number }[] = [];
+      let orderTotal = 0;
+
+      for (const cartItem of cart) {
+        if (!cartItem || (!cartItem.productId && !cartItem.id)) {
+          continue;
+        }
+        const targetId = cartItem.productId || cartItem.id;
+        const prod = db_memory.products.find(p => p && p.id === targetId);
+        if (!prod) {
+          return res.status(400).json({ error: `Product "${cartItem.name || targetId}" no longer exists in our catalog.` });
+        }
+
+        const orderQty = Math.max(1, parseInt(String(cartItem.quantity || 1), 10));
+        const currentStock = typeof prod.stock === "number" ? prod.stock : 0;
+        if (currentStock < orderQty) {
+          return res.status(400).json({ error: `Stock exhausted: Sorry, only ${currentStock} units of "${prod.name}" are left in stock.` });
+        }
+
+        itemsToBuy.push({ product: prod, quantity: orderQty });
+        orderTotal += (typeof prod.price === "number" ? prod.price : 0) * orderQty;
+      }
+
+      if (itemsToBuy.length === 0) {
+        return res.status(400).json({ error: "Checkout aborted: No valid items found in your shopping cart." });
+      }
+
+      // All balances & stocks are safe! Proceed to process final transaction
+      // 1. Decrease Stocks
+      itemsToBuy.forEach(item => {
+        item.product.stock -= item.quantity;
+      });
+
+      const orderId = `ord-${Math.floor(Math.random() * 900000) + 100000}`;
+
+      // 2. Save Order records
+      const completeOrder: Order = {
+        id: orderId,
+        customerName: String(customerName).trim(),
+        customerEmail: String(customerEmail).trim().toLowerCase(),
+        items: itemsToBuy.map(item => ({
+          productId: item.product.id,
+          name: item.product.name,
+          price: item.product.price,
+          quantity: item.quantity
+        })),
+        total: Number(orderTotal.toFixed(2)),
+        status: "pending",
+        date: new Date().toISOString(),
+        cardLast4: billingRef,
+        address: String(address).trim()
+      };
+
+      if (!db_memory.orders) {
+        db_memory.orders = [];
+      }
+      if (!db_memory.notifications) {
+        db_memory.notifications = [];
+      }
+
+      db_memory.orders.push(completeOrder);
+
+      // 3. Trigger Order Status Push Notifications
+      db_memory.notifications.unshift({
+        id: `notif-${Date.now()}-c`,
+        orderId: orderId,
+        title: "Order Placed Successfully! 🎉",
+        message: `Your payment of KSh ${completeOrder.total.toLocaleString()} has been secured. Order #${orderId} is being processed.`,
+        timestamp: new Date().toISOString(),
+        status: "unread"
+      });
+
+      // Vendor Alert Notification
+      const itemsDescription = completeOrder.items.map(item => `${item.name} (${item.quantity}x)`).join(", ");
+      db_memory.notifications.unshift({
+        id: `notif-vendor-order-${Date.now()}`,
+        orderId: orderId,
+        title: "New Store Order Placed! 🛒",
+        message: `Vendor Alert: Order #${orderId} was placed by ${completeOrder.customerName} containing: ${itemsDescription} for a total value of KSh ${completeOrder.total.toLocaleString()}.`,
+        timestamp: new Date().toISOString(),
+        status: "unread"
+      });
+
+      // Check if stock alerts should fire
+      itemsToBuy.forEach(item => {
+        if (item.product.stock <= 3) {
+          db_memory.notifications.unshift({
+            id: `notif-alert-${Date.now()}-${item.product.id}`,
+            orderId: "stock-alert",
+            title: "Low Stock Warning ⚠️",
+            message: `Product "${item.product.name}" has only ${item.product.stock} units remaining. Please restock!`,
+            timestamp: new Date().toISOString(),
+            status: "unread"
+          });
+        }
+      });
+
+      saveStore(db_memory);
+
+      res.status(201).json({
+        success: true,
+        order: completeOrder,
+        message: "Checkout transaction completed through authenticated payments route."
+      });
+    } catch (err: any) {
+      console.error("FATAL CHECKOUT ERROR:", err);
+      res.status(500).json({
+        error: `Secure billing processor declined due to unexpected parameter alignment. Details: ${err.message || err}`
+      });
     }
-
-    let billingRef = "M-Pesa Pay";
-
-    if (paymentMethod === "card") {
-      if (!cardNum || !cardExpiry || !cardCvv) {
-        return res.status(400).json({ error: "Credit card details are required for Card billing." });
-      }
-      // Secure Credit Card Validation (Mock Integrity check: strip symbols, check length)
-      const sanitizedCard = String(cardNum).replace(/\s+/g, "");
-      if (sanitizedCard.length < 15 || sanitizedCard.length > 16 || isNaN(Number(sanitizedCard))) {
-        return res.status(400).json({ error: "Secure Gate: Invalid Credit Card Number format." });
-      }
-
-      const sanitizedCvv = String(cardCvv).trim();
-      if (sanitizedCvv.length < 3 || sanitizedCvv.length > 4 || isNaN(Number(sanitizedCvv))) {
-        return res.status(400).json({ error: "Secure Gate: Invalid CVV security code format." });
-      }
-      billingRef = `xxxx-xxxx-xxxx-${sanitizedCard.slice(-4)}`;
-    } else {
-      // M-Pesa Validation
-      if (!mpesaPhone || !mpesaTxCode) {
-        return res.status(400).json({ error: "M-Pesa Phone number and transaction code are required." });
-      }
-      const sanitizedPhone = String(mpesaPhone).replace(/\s+/g, "");
-      if (sanitizedPhone.length < 9) {
-        return res.status(400).json({ error: "Invalid M-Pesa phone number format." });
-      }
-      const cleanTxCode = String(mpesaTxCode).trim().toUpperCase();
-      if (cleanTxCode.length < 8) {
-        return res.status(400).json({ error: "Verify Reference: M-Pesa receipt code must be at least 8 alphanumeric characters." });
-      }
-      billingRef = `M-Pesa: ${sanitizedPhone} (Ref: ${cleanTxCode})`;
-    }
-
-    // Verify stock and calculate totals
-    const itemsToBuy: { product: Product; quantity: number }[] = [];
-    let orderTotal = 0;
-
-    for (const cartItem of cart) {
-      const prod = db_memory.products.find(p => p.id === cartItem.productId);
-      if (!prod) {
-        return res.status(400).json({ error: `Product "${cartItem.name || cartItem.productId}" no longer exists in our catalog.` });
-      }
-
-      const orderQty = parseInt(String(cartItem.quantity), 10);
-      if (prod.stock < orderQty) {
-        return res.status(400).json({ error: `Stock exhausted: Sorry, only ${prod.stock} units of "${prod.name}" are left in stock.` });
-      }
-
-      itemsToBuy.push({ product: prod, quantity: orderQty });
-      orderTotal += prod.price * orderQty;
-    }
-
-    // All balances & stocks are safe! Proceed to process final transaction
-    // 1. Decrease Stocks
-    itemsToBuy.forEach(item => {
-      item.product.stock -= item.quantity;
-    });
-
-    const orderId = `ord-${Math.floor(Math.random() * 900000) + 100000}`;
-
-    // 2. Save Order records
-    const completeOrder: Order = {
-      id: orderId,
-      customerName: String(customerName).trim(),
-      customerEmail: String(customerEmail).trim().toLowerCase(),
-      items: itemsToBuy.map(item => ({
-        productId: item.product.id,
-        name: item.product.name,
-        price: item.product.price,
-        quantity: item.quantity
-      })),
-      total: Number(orderTotal.toFixed(2)),
-      status: "pending",
-      date: new Date().toISOString(),
-      cardLast4: billingRef,
-      address: String(address).trim()
-    };
-
-    db_memory.orders.push(completeOrder);
-
-    // 3. Trigger Order Status Push Notifications
-    db_memory.notifications.unshift({
-      id: `notif-${Date.now()}-c`,
-      orderId: orderId,
-      title: "Order Placed Successfully! 🎉",
-      message: `Your payment of KSh ${completeOrder.total.toLocaleString()} has been secured. Order #${orderId} is being processed.`,
-      timestamp: new Date().toISOString(),
-      status: "unread"
-    });
-
-    // Vendor Alert Notification
-    const itemsDescription = completeOrder.items.map(item => `${item.name} (${item.quantity}x)`).join(", ");
-    db_memory.notifications.unshift({
-      id: `notif-vendor-order-${Date.now()}`,
-      orderId: orderId,
-      title: "New Store Order Placed! 🛒",
-      message: `Vendor Alert: Order #${orderId} was placed by ${completeOrder.customerName} containing: ${itemsDescription} for a total value of KSh ${completeOrder.total.toLocaleString()}.`,
-      timestamp: new Date().toISOString(),
-      status: "unread"
-    });
-
-    // Check if stock alerts should fire
-    itemsToBuy.forEach(item => {
-      if (item.product.stock <= 3) {
-        db_memory.notifications.unshift({
-          id: `notif-alert-${Date.now()}-${item.product.id}`,
-          orderId: "stock-alert",
-          title: "Low Stock Warning ⚠️",
-          message: `Product "${item.product.name}" has only ${item.product.stock} units remaining. Please restock!`,
-          timestamp: new Date().toISOString(),
-          status: "unread"
-        });
-      }
-    });
-
-    saveStore(db_memory);
-
-    res.status(201).json({
-      success: true,
-      order: completeOrder,
-      message: "Checkout transaction completed through authenticated payments route."
-    });
   });
 
   // 6. ADMIN: ORDER SHIPPED/UPDATED GATEWAY

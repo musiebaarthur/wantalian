@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { safeStorage } from "./utils/safeStorage";
 import Header from "./components/Header";
 import ProductCatalog from "./components/ProductCatalog";
 import CartCheckout from "./components/CartCheckout";
@@ -67,15 +68,15 @@ const LOCAL_FALLBACK_PRODUCTS: Product[] = [
 
 export default function App() {
   // STATE DEFINITIONS
-  const [currentUser, setCurrentUser] = useState<string | null>(() => localStorage.getItem("wantalian_user") || null);
+  const [currentUser, setCurrentUser] = useState<string | null>(() => safeStorage.getItem("wantalian_user") || null);
   const [showContactModal, setShowContactModal] = useState(false);
   const [currentRole, setCurrentRole] = useState<'customer' | 'vendor' | 'admin'>(() => {
-    return (localStorage.getItem("wantalian_role") as any) || "customer";
+    return (safeStorage.getItem("wantalian_role") as any) || "customer";
   });
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => !!localStorage.getItem("wantalian_user"));
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => !!safeStorage.getItem("wantalian_user"));
   const [products, setProducts] = useState<Product[]>(() => {
     try {
-      const cached = localStorage.getItem("wantalian_cached_products");
+      const cached = safeStorage.getItem("wantalian_cached_products");
       return cached ? JSON.parse(cached) : LOCAL_FALLBACK_PRODUCTS;
     } catch {
       return LOCAL_FALLBACK_PRODUCTS;
@@ -105,7 +106,7 @@ export default function App() {
         const pList = await pResp.json();
         if (pList && pList.length > 0) {
           setProducts(pList);
-          localStorage.setItem("wantalian_cached_products", JSON.stringify(pList));
+          safeStorage.setItem("wantalian_cached_products", JSON.stringify(pList));
         }
       }
       
@@ -117,7 +118,7 @@ export default function App() {
     } catch (err) {
       console.warn("Could not fetch fresh live catalog from endpoint. Loading cached catalog parameters.", err);
       try {
-        const cached = localStorage.getItem("wantalian_cached_products");
+        const cached = safeStorage.getItem("wantalian_cached_products");
         if (cached) {
           setProducts(JSON.parse(cached));
         }
@@ -174,7 +175,7 @@ export default function App() {
     refreshOrders();
 
     // 1. Core Persistent Browsing History Loading
-    const localHist = localStorage.getItem("omnishop_search_history");
+    const localHist = safeStorage.getItem("omnishop_search_history");
     if (localHist) {
       setBrowsingHistory(JSON.parse(localHist));
     }
@@ -227,7 +228,7 @@ export default function App() {
       }
 
       setBrowsingHistory(updatedHistory);
-      localStorage.setItem("omnishop_search_history", JSON.stringify(updatedHistory));
+      safeStorage.setItem("omnishop_search_history", JSON.stringify(updatedHistory));
 
       // POST search logs to database proxy
       await fetch("/api/history/log", {
@@ -329,8 +330,8 @@ export default function App() {
           setCurrentRole(role);
           setIsLoggedIn(true);
           setGuestBrowsing(false);
-          localStorage.setItem("wantalian_user", email);
-          localStorage.setItem("wantalian_role", role);
+          safeStorage.setItem("wantalian_user", email);
+          safeStorage.setItem("wantalian_role", role);
         }}
         onBrowseAsGuest={() => setGuestBrowsing(true)}
       />
@@ -345,7 +346,7 @@ export default function App() {
         currentRole={currentRole}
         onChangeRole={(role) => {
           setCurrentRole(role);
-          localStorage.setItem("wantalian_role", role);
+          safeStorage.setItem("wantalian_role", role);
         }}
         cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
         onOpenCart={() => setShowCart(true)}
@@ -355,8 +356,8 @@ export default function App() {
           setCurrentUser(null);
           setIsLoggedIn(false);
           setGuestBrowsing(false);
-          localStorage.removeItem("wantalian_user");
-          localStorage.removeItem("wantalian_role");
+          safeStorage.removeItem("wantalian_user");
+          safeStorage.removeItem("wantalian_role");
         }}
         searchTerm={searchQuery}
         onSearchChange={setSearchQuery}
@@ -422,8 +423,8 @@ export default function App() {
             setCurrentRole(role);
             setIsLoggedIn(true);
             setGuestBrowsing(false);
-            localStorage.setItem("wantalian_user", email);
-            localStorage.setItem("wantalian_role", role);
+            safeStorage.setItem("wantalian_user", email);
+            safeStorage.setItem("wantalian_role", role);
           }}
         />
       )}

@@ -1,5 +1,6 @@
 import { X, CreditCard, ShieldCheck, Truck, ShoppingBag, Trash2, ArrowRight, Phone, CheckCircle, Home, Mail, Lock, User, KeyRound, ArrowLeft, Sparkles } from "lucide-react";
 import React, { useState } from "react";
+import { safeStorage } from "../utils/safeStorage";
 import { Product } from "../types";
 
 const KENYA_COUNTIES = [
@@ -113,6 +114,20 @@ export default function CartCheckout({
   const [authRole, setAuthRole] = useState<"customer" | "vendor" | "admin">("customer");
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+
+  const handleAutoFillDemo = () => {
+    setCustomerName("Guest Buyer");
+    setCustomerEmail("guest@wantalian.com");
+    setSelectedCounty("Nairobi");
+    setSelectedTown("Kilimani");
+    setEstateAddress("Kilimani Road, Crescent Court Block C, Room 4");
+    setMpesaPhone("0712345678");
+    setMpesaTxCode("SD34LM90KL");
+    setCardNum("4000 1234 5678 9010");
+    setCardExpiry("12/28");
+    setCardCvv("123");
+    setErrorStatus(null);
+  };
 
   React.useEffect(() => {
     if (isLoggedIn && currentUserEmail) {
@@ -229,10 +244,33 @@ export default function CartCheckout({
         }),
       });
 
-      const body = await resp.json();
+      let resText = "";
+      try {
+        resText = await resp.text();
+      } catch (errText) {
+        console.error("Failed to read checkout response stream:", errText);
+      }
+
+      let body: any = {};
+      let isJson = false;
+      try {
+        if (resText) {
+          body = JSON.parse(resText);
+          isJson = true;
+        }
+      } catch (e) {
+        console.warn("Response was not JSON format:", resText);
+      }
 
       if (!resp.ok) {
-        throw new Error(body.error || "Failed to verify payment details.");
+        const errorMsg = isJson && body?.error 
+          ? body.error 
+          : `Server error code ${resp.status}: ${resText.slice(0, 160) || "Empty response body"}`;
+        throw new Error(errorMsg);
+      }
+
+      if (!isJson || !body || !body.order) {
+        throw new Error(`The checkout gateway received an incomplete response buffer (Status ${resp.status}).`);
       }
 
       // Log purchase actions inside search histories
@@ -245,7 +283,7 @@ export default function CartCheckout({
       onClearCart();
 
       // Formspree Automated Email Confirmation sending process
-      const formId = localStorage.getItem("wantalian_formspree_id") || "xgobwdpr";
+      const formId = safeStorage.getItem("wantalian_formspree_id") || "xgobwdpr";
       const endpointUrl = formId.startsWith("http") 
         ? formId 
         : `https://formspree.io/f/${formId}`;
@@ -349,7 +387,7 @@ export default function CartCheckout({
                 <div className="flex justify-between">
                   <span className="text-gray-400">Payment Channel:</span>
                   <span className="font-bold text-neutral-700 capitalize">
-                    {completedOrder.paymentMethod === "mpesa" ? "M-PESA Till" : "Credit/Debit Card"}
+                    {paymentMethod === "mpesa" ? "M-PESA Till" : "Credit/Debit Card"}
                   </span>
                 </div>
                 {completedOrder.address && (
@@ -401,7 +439,11 @@ export default function CartCheckout({
                   onGoHome();
                 } else {
                   onClose();
-                  window.scrollTo({ top: 0, behavior: "smooth" });
+                  try {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  } catch {
+                    window.scrollTo(0, 0);
+                  }
                 }
               }}
               className="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 font-extrabold text-xs tracking-wider rounded-xl cursor-pointer hover:scale-[1.01] transition-all flex items-center justify-center gap-2 uppercase font-sans"
@@ -775,6 +817,21 @@ export default function CartCheckout({
                 <ShieldCheck className="w-4 h-4 text-orange-500" />
                 Secure Checkout Gateway
               </h3>
+
+              {/* DEMO ACCELERATOR HELPER */}
+              <div className="bg-orange-50/50 hover:bg-orange-50 border border-orange-100/60 p-2.5 rounded-xl flex items-center justify-between gap-2.5 transition-all">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-orange-500 animate-pulse shrink-0" />
+                  <p className="text-[10px] text-gray-650 font-semibold leading-tight">Testing direct checkout? Tap to skip forms!</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAutoFillDemo}
+                  className="px-2.5 py-1 text-[10px] font-black text-white bg-orange-500 hover:bg-orange-650 rounded-lg shadow-xs transition-all uppercase tracking-wide cursor-pointer shrink-0"
+                >
+                  ⚡ Auto-Fill Demo
+                </button>
+              </div>
 
               {/* ERROR DISPLAY */}
               {errorStatus && (

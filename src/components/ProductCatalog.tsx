@@ -4,6 +4,7 @@ import {
   Truck, ArrowRight, UserCheck, MessageSquare, ThumbsUp, Sparkles, Check
 } from "lucide-react";
 import React, { useState, useMemo, useEffect } from "react";
+import { safeStorage } from "../utils/safeStorage";
 import { Product } from "../types";
 
 interface ProductCatalogProps {
@@ -139,7 +140,7 @@ export default function ProductCatalog({
   // Product reviews management state
   const [reviews, setReviews] = useState<Review[]>(() => {
     try {
-      const saved = localStorage.getItem("wantalian_reviews_db");
+      const saved = safeStorage.getItem("wantalian_reviews_db");
       return saved ? JSON.parse(saved) : DEFAULT_REVIEWS;
     } catch {
       return DEFAULT_REVIEWS;
@@ -249,7 +250,7 @@ export default function ProductCatalog({
 
     const nextReviews = [added, ...reviews];
     setReviews(nextReviews);
-    localStorage.setItem("wantalian_reviews_db", JSON.stringify(nextReviews));
+    safeStorage.setItem("wantalian_reviews_db", JSON.stringify(nextReviews));
 
     // Reset Form
     setNewReviewAuthor("");
