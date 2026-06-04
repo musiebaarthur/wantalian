@@ -65,6 +65,61 @@ export default function FormspreeContactModal({
     const cleaned = newId.trim();
     setFormId(cleaned);
     safeStorage.setItem("wantalian_formspree_id", cleaned);
+    // Reset test button state on changes to the input
+    setTestStatus("idle");
+    setTestMessage("");
+  };
+
+  // Test Connection States
+  const [testStatus, setTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [testMessage, setTestMessage] = useState<string>("");
+
+  const handleTestConnection = async () => {
+    if (!formId.trim()) {
+      setTestStatus("error");
+      setTestMessage("Form ID / URL is empty.");
+      return;
+    }
+    setTestStatus("loading");
+    setTestMessage("Transmitting diagnostic handshake packet...");
+
+    const endpointUrl = formId.startsWith("http") 
+      ? formId 
+      : `https://formspree.io/f/${formId}`;
+
+    try {
+      const response = await fetch(endpointUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          name: "System Connection Monitor",
+          email: "monitor-ping@wantalian.com",
+          message: "Active Preflight Handshake Packet. This is a secure system diagnostic verification. Please ignore this test entry.",
+          _subject: "[Wantalian Store Monitor] Live Handshake Signal",
+          isDryRun: true
+        })
+      });
+
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch (e) {}
+
+      if (response.ok) {
+        setTestStatus("success");
+        setTestMessage("Handshake Connected! Formspree received the request and returned successfully.");
+      } else {
+        setTestStatus("error");
+        setTestMessage(data.error || "Formspree rejected the request. Please check if your Form ID is valid.");
+      }
+    } catch (err: any) {
+      console.error("Test ping error:", err);
+      setTestStatus("error");
+      setTestMessage("Network connect failure. Verify connection route or Form ID format.");
+    }
   };
 
   const resetForm = () => {
@@ -215,6 +270,7 @@ export default function FormspreeContactModal({
                     className="flex-1 px-3 py-1.5 text-xs text-neutral-800 bg-white border border-orange-200 rounded-lg focus:outline-none focus:border-orange-500 font-mono"
                   />
                   <button
+                    type="button"
                     onClick={() => handleSaveFormId(defaultFormId)}
                     title="Revert to pre-configured Test Inbox"
                     className="px-2.5 py-1.5 rounded-lg border border-orange-200 hover:border-orange-500 text-orange-850 bg-white hover:bg-orange-50 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all shrink-0"
@@ -223,6 +279,43 @@ export default function FormspreeContactModal({
                     <span>Use Demo</span>
                   </button>
                 </div>
+              </div>
+
+              {/* LIVE DIAGNOSTICS TESTER */}
+              <div className="bg-orange-100/40 p-2.5 rounded-xl border border-orange-200/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-mono tracking-wider font-extrabold text-orange-950">
+                    Routing & Handshake Diagnostics
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleTestConnection}
+                    disabled={testStatus === "loading"}
+                    className="px-2.5 py-1 text-[10px] font-bold text-white bg-orange-600 hover:bg-orange-700 active:scale-95 disabled:opacity-50 rounded-md shadow-xs flex items-center gap-1 cursor-pointer transition-all shrink-0"
+                  >
+                    {testStatus === "loading" ? (
+                      <>
+                        <span className="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
+                        <span>Pinging...</span>
+                      </>
+                    ) : (
+                      <span>Verify Handshake</span>
+                    )}
+                  </button>
+                </div>
+
+                {testStatus !== "idle" && (
+                  <div className={`p-2 rounded-lg text-[11px] leading-snug flex items-start gap-1.5 animate-fade-in ${
+                    testStatus === "loading" ? "bg-white/50 text-orange-850" :
+                    testStatus === "success" ? "bg-emerald-50 text-emerald-900 border border-emerald-100" :
+                    "bg-red-50 text-red-900 border border-red-100"
+                  }`}>
+                    {testStatus === "success" && <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />}
+                    {testStatus === "error" && <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />}
+                    {testStatus === "loading" && <RefreshCw className="w-3.5 h-3.5 text-orange-500 animate-spin shrink-0 mt-0.5" />}
+                    <span>{testMessage}</span>
+                  </div>
+                )}
               </div>
 
               <div className="bg-white/80 rounded-xl p-2.5 border border-orange-100 flex items-center justify-between text-[11px] font-medium text-orange-900">
