@@ -1,11 +1,50 @@
-import { Plus, Minus, Tag, DollarSign, Package, AlertTriangle, Sparkles, Check, Bell, BellRing, ShoppingBag, Clock } from "lucide-react";
+import { Plus, Minus, Tag, DollarSign, Package, AlertTriangle, Sparkles, Check, Bell, BellRing, ShoppingBag, Clock, Image, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { Product, PushNotification } from "../types";
+
+export interface GalleryItem {
+  id: string;
+  name: string;
+  category: string;
+  url: string;
+}
+
+export const CURATED_GALLERY: GalleryItem[] = [
+  // Audio
+  { id: "g-audio-1", name: "Premium Aura Headphones", category: "Audio", url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-audio-2", name: "TWS True Wireless Buds", category: "Audio", url: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-audio-3", name: "Vintage Oak Stereo", category: "Audio", url: "https://images.unsplash.com/photo-1608156639585-b3a032ef9689?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-audio-4", name: "Smart Home Assistant Pod", category: "Audio", url: "https://images.unsplash.com/photo-1543512214-318c7553f230?w=600&auto=format&fit=crop&q=80" },
+
+  // Tech Gear
+  { id: "g-tech-1", name: "Tactile Mechanical Keyboard", category: "Tech Gear", url: "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-tech-2", name: "Ergonomic Arc Mouse", category: "Tech Gear", url: "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-tech-3", name: "Immersive Gaming Display", category: "Tech Gear", url: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-tech-4", name: "Multipurpose Hub Expansion", category: "Tech Gear", url: "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=600&auto=format&fit=crop&q=80" },
+
+  // Home Ambient
+  { id: "g-home-1", name: "Warm Amber Lightbulb", category: "Home Ambient", url: "https://images.unsplash.com/photo-1550985616-10810253b84d?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-home-2", name: "Vivid Flexible LED strip", category: "Home Ambient", url: "https://images.unsplash.com/photo-1565814636199-ae8133055c1c?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-home-3", name: "Harmonious Sands Frame", category: "Home Ambient", url: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-home-4", name: "Aromatherapy Nebulizer Mist", category: "Home Ambient", url: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=600&auto=format&fit=crop&q=80" },
+
+  // Accessories
+  { id: "g-acc-1", name: "Fine Leather Card Holder", category: "Accessories", url: "https://images.unsplash.com/photo-1627123424574-724758594e93?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-acc-2", name: "Executive Felt Pad", category: "Accessories", url: "https://images.unsplash.com/photo-1632292224971-0d45778bd364?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-acc-3", name: "Silver Raised Laptop Stand", category: "Accessories", url: "https://images.unsplash.com/photo-1527443195645-1133b7f28990?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-acc-4", name: "Eyewear Computer Filters", category: "Accessories", url: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&auto=format&fit=crop&q=80" },
+
+  // Apparel
+  { id: "g-app-1", name: "Essential Cozy Pullover", category: "Apparel", url: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-app-2", name: "Unisex High-Top Sports Shoes", category: "Apparel", url: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&auto=format&fit=crop&q=80" },
+  { id: "g-app-3", name: "Steel Chronograph Watch", category: "Apparel", url: "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=600&auto=format&fit=crop&q=80" }
+];
 
 interface VendorPortalProps {
   products: Product[];
   onAddProduct: (newProduct: Partial<Product>) => Promise<void>;
   onAdjustStock: (productId: string, adjustment: number) => Promise<void>;
+  onDeleteProduct?: (productId: string) => Promise<void>;
   notifications: PushNotification[];
 }
 
@@ -13,6 +52,7 @@ export default function VendorPortal({
   products,
   onAddProduct,
   onAdjustStock,
+  onDeleteProduct,
   notifications
 }: VendorPortalProps) {
   // New Product form fields
@@ -32,6 +72,11 @@ export default function VendorPortal({
 
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const [showGalleryPicker, setShowGalleryPicker] = useState(false);
+  const [selectedGalleryCategory, setSelectedGalleryCategory] = useState("All");
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const vendorId = "vendor-user"; // Simulate authenticated vendor user
 
@@ -78,7 +123,42 @@ export default function VendorPortal({
     const reader = new FileReader();
     reader.onload = (event) => {
       if (event.target && typeof event.target.result === "string") {
-        setImage(event.target.result);
+        const img = new window.Image();
+        img.onload = () => {
+          // Downscale to target size e.g. max dimension 800px to avoid storage crashes and maximize speeds
+          const maxDim = 800;
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            // Convert to high-performance compressed jpeg
+            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.75);
+            setImage(compressedBase64);
+          } else {
+            // Fallback to original
+            setImage(event.target?.result as string);
+          }
+        };
+        img.onerror = () => {
+          setErrorStatus("Failed to process image drawing buffer.");
+        };
+        img.src = event.target.result;
       }
     };
     reader.onerror = () => {
@@ -114,7 +194,6 @@ export default function VendorPortal({
 
     const priceNum = parseFloat(price);
     const stockNum = parseInt(stock, 10);
-    const originalPriceNum = originalPrice ? parseFloat(originalPrice) : undefined;
 
     if (isNaN(priceNum) || priceNum <= 0) {
       setErrorStatus("Price must be a valid positive number.");
@@ -128,11 +207,11 @@ export default function VendorPortal({
       return;
     }
 
-    if (originalPriceNum !== undefined && (isNaN(originalPriceNum) || originalPriceNum < priceNum)) {
-      setErrorStatus("Original Retail Price must be a valid positive number and should exceed or equal Unit Price.");
-      setSubmitting(false);
-      return;
-    }
+    // Automatically calculate a realistic older retail price with a 15% to 35% discount rate
+    const rates = [15, 20, 25, 30, 35];
+    const rateIndex = Math.abs(name.charCodeAt(0) + Math.round(priceNum)) % rates.length;
+    const selectedRate = rates[rateIndex];
+    const originalPriceNum = Math.round(priceNum / (1 - selectedRate / 100));
 
     // Set fallback image if empty
     const finalImage = image.trim() || setRandomStockImage(category);
@@ -259,19 +338,14 @@ export default function VendorPortal({
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[9px] uppercase font-mono tracking-wider font-bold text-gray-400 block flex items-center gap-0.5">
-                <Tag className="w-3 h-3 text-gray-300 line-through" />
-                Original Retail (KSh)
-              </label>
-              <input
-                type="number"
-                step="1"
-                placeholder="e.g. 20000 (Optional)"
-                value={originalPrice}
-                onChange={(e) => setOriginalPrice(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs text-gray-700 bg-gray-50 border border-gray-100 rounded-lg focus:outline-hidden focus:border-neutral-900 focus:bg-white transition-all shadow-xs font-mono text-gray-500"
-              />
+            <div className="bg-orange-50/30 border border-dashed border-orange-100/50 rounded-xl p-3 space-y-1 select-none flex flex-col justify-center">
+              <span className="text-[9px] uppercase font-extrabold tracking-wider text-orange-800 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
+                Auto-Slashed Discount Active
+              </span>
+              <p className="text-[10px] text-gray-500 leading-relaxed font-medium">
+                Provide only the actual sale price above. Our system automatically generates a crossed-out higher "original retail" price with a computed <strong className="text-orange-600 font-bold">15% to 35% discount</strong> to drive user interest!
+              </p>
             </div>
 
             <div className="space-y-1">
@@ -313,14 +387,14 @@ export default function VendorPortal({
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${
+              className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all flex flex-col items-center justify-center gap-2 min-h-[140px] ${
                 isDragOver 
                   ? "border-emerald-500 bg-emerald-50/50" 
                   : "border-gray-200 hover:border-emerald-500 bg-gray-50/40"
               }`}
             >
               <input
+                id="vendor-image-file-input"
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileSelect}
@@ -328,7 +402,7 @@ export default function VendorPortal({
                 className="hidden"
               />
               {image ? (
-                <div className="relative group w-full flex flex-col items-center gap-2">
+                <div className="relative z-10 w-full flex flex-col items-center gap-2">
                   <img
                     src={image}
                     alt="Uploaded preview"
@@ -344,19 +418,24 @@ export default function VendorPortal({
                       e.stopPropagation();
                       setImage("");
                     }}
-                    className="text-[10px] text-red-500 hover:underline hover:text-red-650 font-mono"
+                    className="text-[10px] text-red-500 hover:underline hover:text-red-650 font-mono cursor-pointer"
                   >
                     Remove Photo
                   </button>
                 </div>
               ) : (
-                <div className="space-y-1">
-                  <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl inline-flex">
-                    <Plus className="w-4 h-4 text-emerald-600" />
+                <label 
+                  htmlFor="vendor-image-file-input"
+                  className="absolute inset-0 cursor-pointer z-5 flex flex-col items-center justify-center p-4"
+                >
+                  <div className="space-y-1 text-center">
+                    <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl inline-flex mb-1">
+                      <Plus className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <p className="text-xs font-semibold text-gray-700">Choose photo from your gallery</p>
+                    <p className="text-[10px] text-gray-400">Tap to browse files or drop here</p>
                   </div>
-                  <p className="text-xs font-semibold text-gray-700">Drag & drop photo or click to upload</p>
-                  <p className="text-[10px] text-gray-400">Supports PNG, JPG, GIF up to 5MB</p>
-                </div>
+                </label>
               )}
             </div>
 
@@ -371,6 +450,79 @@ export default function VendorPortal({
                 onChange={(e) => setImage(e.target.value)}
                 className="w-full px-3 py-1.5 text-xs text-gray-700 bg-gray-50 border border-gray-100 rounded-lg focus:outline-hidden focus:border-neutral-900 focus:bg-white transition-all text-ellipsis"
               />
+            </div>
+
+            {/* GALLERY CHOICE SELECTION ROOM */}
+            <div className="pt-2 border-t border-gray-100/60 mt-2">
+              <button
+                type="button"
+                onClick={() => setShowGalleryPicker(!showGalleryPicker)}
+                className="w-full flex items-center justify-between py-1.5 px-3 bg-orange-50/40 hover:bg-orange-50/80 border border-orange-100/50 rounded-lg text-[10.5px] font-bold text-orange-850 transition-all select-none"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Image className="w-3.5 h-3.5 text-orange-600" />
+                  <span>Choose Image from Stock Galleries</span>
+                </div>
+                {showGalleryPicker ? <ChevronUp className="w-3.5 h-3.5 text-orange-500" /> : <ChevronDown className="w-3.5 h-3.5 text-orange-500" />}
+              </button>
+
+              {showGalleryPicker && (
+                <div className="mt-2 p-2 bg-neutral-50/50 border border-gray-200/60 rounded-xl space-y-2">
+                  <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-1">
+                    {["All", "Audio", "Tech Gear", "Home Ambient", "Accessories", "Apparel"].map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setSelectedGalleryCategory(cat)}
+                        className={`px-2 py-0.5 text-[9px] font-bold rounded-md whitespace-nowrap transition-all ${
+                          selectedGalleryCategory === cat
+                            ? "bg-neutral-900 text-white"
+                            : "bg-white text-gray-500 border border-gray-200/80 hover:bg-gray-150"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto scrollbar-thin p-0.5">
+                    {CURATED_GALLERY.filter(item => selectedGalleryCategory === "All" || item.category === selectedGalleryCategory).map((item) => {
+                      const isSelected = image === item.url;
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => setImage(item.url)}
+                          className={`group relative aspect-video rounded-lg overflow-hidden border cursor-pointer transition-all ${
+                            isSelected
+                              ? "border-orange-500 ring-2 ring-orange-500/20 shadow-xs"
+                              : "border-gray-150 hover:border-gray-300"
+                          }`}
+                        >
+                          <img
+                            src={item.url}
+                            alt={item.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300 pointer-events-none"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-neutral-950/80 via-neutral-950/45 to-transparent p-1 px-1.5 flex flex-col justify-end">
+                            <span className="text-[8px] font-bold text-white leading-tight truncate">
+                              {item.name}
+                            </span>
+                            <span className="text-[7px] font-mono text-orange-300 font-semibold leading-none">
+                              {item.category}
+                            </span>
+                          </div>
+                          {isSelected && (
+                            <div className="absolute top-1 right-1 bg-orange-500 text-white p-0.5 rounded-full shadow-xs">
+                              <Check className="w-2.5 h-2.5" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -491,6 +643,42 @@ export default function VendorPortal({
                           <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
+
+                      {/* SAFE INLINE CATALOG DELETION OPTION */}
+                      {onDeleteProduct && (
+                        <div className="flex items-center pl-1.5 border-l border-gray-100 shrink-0">
+                          {deletingId === p.id ? (
+                            <div className="flex items-center gap-1 animate-fade-in">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await onDeleteProduct(p.id);
+                                  } finally {
+                                    setDeletingId(null);
+                                  }
+                                }}
+                                className="px-2 py-1 bg-red-650 hover:bg-red-750 text-white font-extrabold text-[9px] uppercase tracking-wider rounded-md shadow-xs transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                              >
+                                Delete
+                              </button>
+                              <button
+                                onClick={() => setDeletingId(null)}
+                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-650 font-extrabold text-[9px] uppercase tracking-wider rounded-md transition-all cursor-pointer whitespace-nowrap"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setDeletingId(p.id)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer shrink-0"
+                              title="Delete Item from Store Catalog"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      )}
 
                     </div>
                   </div>

@@ -21,86 +21,7 @@ interface StoreSchema {
   logs: ActionLog[];
 }
 
-const DEFAULT_PRODUCTS: Product[] = [
-  {
-    id: "prod-1",
-    name: "Aura Soundbar Pro",
-    description: "Elegant spatial audio system featuring patented high-fidelity sonic waves, dynamic acoustic profiling, and rich walnut wood grills.",
-    category: "Audio",
-    price: 249.99,
-    stock: 12,
-    image: "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=600&auto=format&fit=crop&q=80",
-    vendorId: "vendor-global",
-    rating: 4.8,
-    reviewsCount: 34,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "prod-2",
-    name: "Nova Light Canvas",
-    description: "Intelligent ambient modular LED light sheets that morph color palettes and shift luminances in synchronization with your environment's kinetic vibes.",
-    category: "Home Ambient",
-    price: 139.50,
-    stock: 25,
-    image: "https://images.unsplash.com/photo-1507646227500-4d389b0012be?w=600&auto=format&fit=crop&q=80",
-    vendorId: "vendor-global",
-    rating: 4.6,
-    reviewsCount: 19,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "prod-3",
-    name: "Zenith Ergo Split Keyboard",
-    description: "Ergonomic mechanical split-layout keyboard crafted in aviation-grade dark gray aluminum with hot-swappable clicky gold switches and customizable ortholinear layout.",
-    category: "Tech Gear",
-    price: 189.00,
-    stock: 8,
-    image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&auto=format&fit=crop&q=80",
-    vendorId: "vendor-global",
-    rating: 4.9,
-    reviewsCount: 42,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "prod-4",
-    name: "Nebula Desk Mat (Extra Large)",
-    description: "Premium smooth mouse mat woven with low-friction silver-thread microtexture, non-slip rubber padding, and high-fidelity deep space print.",
-    category: "Accessories",
-    price: 39.00,
-    stock: 40,
-    image: "https://images.unsplash.com/photo-1616440347437-b1c73416efc2?w=600&auto=format&fit=crop&q=80",
-    vendorId: "vendor-global",
-    rating: 4.7,
-    reviewsCount: 112,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "prod-5",
-    name: "Chronos Light Kinetic Watch",
-    description: "A timeless kinetic piece charged entirely by ambient light, encased in premium brushed metal, sapphire crystal glass, and paired with structured leather strap.",
-    category: "Apparel",
-    price: 310.00,
-    stock: 5,
-    image: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=600&auto=format&fit=crop&q=80",
-    vendorId: "vendor-global",
-    rating: 4.9,
-    reviewsCount: 15,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "prod-6",
-    name: "EcoThread Commuter Pack",
-    description: "Weatherproof modular commuter daypack constructed 100% from ocean-bound recycled plastic fibers with magnetic utility fixtures and custom laptop pocket.",
-    category: "Accessories",
-    price: 85.00,
-    stock: 18,
-    image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=80",
-    vendorId: "vendor-global",
-    rating: 4.5,
-    reviewsCount: 61,
-    createdAt: new Date().toISOString()
-  }
-];
+const DEFAULT_PRODUCTS: Product[] = [];
 
 // Seed & load store helper
 function loadStore(): StoreSchema {
@@ -263,6 +184,37 @@ async function startServer() {
     }
 
     res.json(product);
+  });
+
+  // 3.5 VENDOR: DELETE PRODUCT FROM ACTIVE CATALOG
+  app.post("/api/vendor/products/delete", (req, res) => {
+    const { productId } = req.body;
+    if (!productId) {
+      return res.status(400).json({ error: "Missing productId to delete." });
+    }
+
+    const initialLength = db_memory.products.length;
+    const targetProduct = db_memory.products.find(p => p.id === productId);
+    db_memory.products = db_memory.products.filter(p => p.id !== productId);
+
+    if (db_memory.products.length === initialLength) {
+      return res.status(404).json({ error: "Product not found under active register database." });
+    }
+
+    saveStore(db_memory);
+
+    // Notify administrators / push feed
+    db_memory.notifications.unshift({
+      id: `notif-${Date.now()}`,
+      orderId: "vendor-action",
+      title: "Product Removed 🗑️",
+      message: `Vendor removed item: "${targetProduct ? targetProduct.name : productId}" from store catalog.`,
+      timestamp: new Date().toISOString(),
+      status: "unread"
+    });
+    saveStore(db_memory);
+
+    res.json({ success: true, message: "Product successfully deleted.", productId });
   });
 
   // 4. CUSTOMER: LOG ACTION FOR ML ENGINE RECOMMENDATION

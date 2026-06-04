@@ -1,7 +1,7 @@
 import { 
   Search, SlidersHorizontal, ShoppingCart, Tag, Flame, Clock, 
   ChevronLeft, ChevronRight, Star, ShieldCheck, Heart, Info, 
-  Truck, ArrowRight, UserCheck, MessageSquare, ThumbsUp, Sparkles, Check
+  Truck, ArrowRight, UserCheck, MessageSquare, ThumbsUp, Sparkles, Check, ShoppingBag
 } from "lucide-react";
 import React, { useState, useMemo, useEffect } from "react";
 import { safeStorage } from "../utils/safeStorage";
@@ -13,6 +13,7 @@ interface ProductCatalogProps {
   onLogHistory: (productId: string, actionType: 'view' | 'cart' | 'purchase') => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
+  onChangeRole?: (role: 'customer' | 'vendor' | 'admin') => void;
 }
 
 // IN-APP INITIAL PRODUCT REVIEWS LIST
@@ -104,7 +105,8 @@ export default function ProductCatalog({
   onAddToCart,
   onLogHistory,
   searchTerm,
-  onSearchChange
+  onSearchChange,
+  onChangeRole
 }: ProductCatalogProps) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [activeSlide, setActiveSlide] = useState(0);
@@ -564,8 +566,40 @@ export default function ProductCatalog({
       </div>
 
       {/* SECTION 4: PRODUCT TILES GRID */}
-      {filteredProducts.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-gray-200 rounded-3xl">
+      {products.length === 0 ? (
+        <div className="text-center py-20 bg-linear-to-b from-orange-50/10 to-neutral-50/20 border border-dashed border-orange-200/80 rounded-3xl p-8 max-w-2xl mx-auto space-y-6">
+          <div className="w-16 h-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto shadow-xs">
+            <ShoppingBag className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-black text-neutral-900 tracking-tight">Active Catalog is Empty!</h3>
+            <p className="text-xs text-neutral-600 max-w-md mx-auto leading-relaxed">
+              We have cleared the preloaded demo items. Be the first to establish active listings on Wantalian Hub! Anyone is welcome to list their items for sale.
+            </p>
+          </div>
+          
+          <div className="bg-white/80 p-4 rounded-2xl border border-gray-155 max-w-md mx-auto text-left flex items-start gap-3 shadow-3xs">
+            <Sparkles className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5 animate-pulse" />
+            <div className="text-[11px] text-neutral-600 leading-normal space-y-1">
+              <span className="font-extrabold text-neutral-900 uppercase tracking-wide block">How to upload:</span>
+              <p>1. Open your account dropdown in the header and switch to <strong className="text-orange-600">Vendor Portal</strong>.</p>
+              <p>2. Fill in the product form, title, stock, and unit price in KSh.</p>
+              <p>3. Upload from your device gallery OR select from our high-resolution curated stock image galleries!</p>
+            </div>
+          </div>
+
+          {onChangeRole && (
+            <button
+              onClick={() => onChangeRole("vendor")}
+              className="px-6 py-2.5 bg-neutral-950 hover:bg-neutral-850 text-white font-extrabold text-xs tracking-wider rounded-xl transition-all shadow-md active:scale-95 cursor-pointer uppercase flex items-center gap-2 mx-auto"
+            >
+              <Sparkles className="w-4 h-4 text-orange-400" />
+              <span>Go to Vendor Portal to Upload Items</span>
+            </button>
+          )}
+        </div>
+      ) : filteredProducts.length === 0 ? (
+        <div className="text-center py-16 bg-white border border-gray-200 rounded-3xl animate-fade-in">
           <Tag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-base font-bold text-gray-900">No products found matching filters</p>
           <p className="text-xs text-gray-400 mt-1">Try changing search descriptors or category tags!</p>

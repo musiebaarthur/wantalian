@@ -11,60 +11,7 @@ import FormspreeContactModal from "./components/FormspreeContactModal";
 import { Product, Order, PushNotification } from "./types";
 import { Sparkles, CheckCircle, Flame, ShieldAlert, ShoppingBag, BellRing, X } from "lucide-react";
 
-const LOCAL_FALLBACK_PRODUCTS: Product[] = [
-  {
-    id: "prod-1",
-    name: "Aura Soundbar Pro",
-    description: "Elegant spatial audio system featuring patented high-fidelity sonic waves, dynamic acoustic profiling, and rich walnut wood grills.",
-    category: "Audio",
-    price: 249.99,
-    stock: 12,
-    image: "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=600&auto=format&fit=crop&q=80",
-    vendorId: "vendor-global",
-    rating: 4.8,
-    reviewsCount: 34,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "prod-2",
-    name: "Nova Light Canvas",
-    description: "Intelligent ambient modular LED light sheets that morph color palettes and shift luminances in synchronization with your environment's kinetic vibes.",
-    category: "Home Ambient",
-    price: 139.50,
-    stock: 25,
-    image: "https://images.unsplash.com/photo-1507646227500-4d389b0012be?w=600&auto=format&fit=crop&q=80",
-    vendorId: "vendor-global",
-    rating: 4.6,
-    reviewsCount: 19,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "prod-3",
-    name: "Zenith Ergo Split Keyboard",
-    description: "Ergonomic mechanical split-layout keyboard crafted in aviation-grade dark gray aluminum with hot-swappable clicky gold switches.",
-    category: "Tech Gear",
-    price: 189.00,
-    stock: 8,
-    image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&auto=format&fit=crop&q=80",
-    vendorId: "vendor-global",
-    rating: 4.9,
-    reviewsCount: 42,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "prod-4",
-    name: "Nebula Desk Mat (Extra Large)",
-    description: "Premium smooth mouse mat woven with low-friction silver-thread microtexture, non-slip rubber padding, and high-fidelity deep space print.",
-    category: "Accessories",
-    price: 39.00,
-    stock: 40,
-    image: "https://images.unsplash.com/photo-1616440347437-b1c73416efc2?w=600&auto=format&fit=crop&q=80",
-    vendorId: "vendor-global",
-    rating: 4.7,
-    reviewsCount: 112,
-    createdAt: new Date().toISOString()
-  }
-];
+const LOCAL_FALLBACK_PRODUCTS: Product[] = [];
 
 export default function App() {
   // STATE DEFINITIONS
@@ -77,7 +24,20 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>(() => {
     try {
       const cached = safeStorage.getItem("wantalian_cached_products");
-      return cached ? JSON.parse(cached) : LOCAL_FALLBACK_PRODUCTS;
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        // Clear out any legacy demo items automatically
+        const cleaned = parsed.filter((p: any) => 
+          p.vendorId !== "vendor-global" && 
+          !["prod-1", "prod-2", "prod-3", "prod-4", "prod-5", "prod-6"].includes(p.id)
+        );
+        if (cleaned.length !== parsed.length) {
+          safeStorage.setItem("wantalian_cached_products", JSON.stringify(cleaned));
+          return cleaned;
+        }
+        return parsed;
+      }
+      return LOCAL_FALLBACK_PRODUCTS;
     } catch {
       return LOCAL_FALLBACK_PRODUCTS;
     }
@@ -120,10 +80,12 @@ export default function App() {
       if (pResp.ok) {
         setServerIsAlive(true);
         const pList = await pResp.json();
-        if (pList && pList.length > 0) {
-          setProducts(pList);
-          safeStorage.setItem("wantalian_cached_products", JSON.stringify(pList));
-        }
+        const cleaned = pList.filter((p: any) => 
+          p.vendorId !== "vendor-global" && 
+          !["prod-1", "prod-2", "prod-3", "prod-4", "prod-5", "prod-6"].includes(p.id)
+        );
+        setProducts(cleaned);
+        safeStorage.setItem("wantalian_cached_products", JSON.stringify(cleaned));
       } else if (pResp.status === 404) {
         setServerIsAlive(false);
       }
@@ -351,6 +313,32 @@ export default function App() {
     }
   };
 
+  // DELETE PRODUCT ENTIRELY FROM CUSTOMERS INTERFACE: VENDOR FORMS
+  const handleDeleteProductVendor = async (productId: string) => {
+    try {
+      const resp = await fetch("/api/vendor/products/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId })
+      });
+
+      if (resp.status === 404) {
+        throw new Error("fallback 404");
+      }
+
+      if (!resp.ok) {
+        throw new Error("Product deletion rejected by server.");
+      }
+
+      await fetchData();
+    } catch (err) {
+      console.warn("Using vendor product delete fallback client-side:", err);
+      const updated = products.filter(p => p.id !== productId);
+      setProducts(updated);
+      safeStorage.setItem("wantalian_cached_products", JSON.stringify(updated));
+    }
+  };
+
   // UPDATE STATUS DETAILS: ADMIN INTERFACE
   const handleUpdateOrderStatusAdmin = async (orderId: string, status: string) => {
     try {
@@ -449,6 +437,7 @@ export default function App() {
               onLogHistory={handleLogHistory}
               searchTerm={searchQuery}
               onSearchChange={setSearchQuery}
+              onChangeRole={setCurrentRole}
             />
           </div>
         )}
@@ -458,6 +447,7 @@ export default function App() {
             products={products}
             onAddProduct={handleAddProductVendor}
             onAdjustStock={handleAdjustStockVendor}
+            onDeleteProduct={handleDeleteProductVendor}
             notifications={notifications}
           />
         )}
