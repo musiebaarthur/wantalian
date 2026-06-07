@@ -396,11 +396,14 @@ export default function ProductCatalog({
         <div className="flex flex-col gap-4">
           <div className="bg-gradient-to-tr from-orange-500 to-amber-600 rounded-3xl p-5 text-white flex flex-col justify-between flex-1 relative overflow-hidden shadow-md">
             <div className="space-y-1.5 relative z-10 text-left">
-              <span className="text-[9px] font-mono font-bold bg-white/20 px-2 py-0.5 rounded-full">BUY GOODS TILL</span>
-              <h3 className="text-lg font-black tracking-tight text-white leading-tight">PAY SECURELY WITH M-PESA TILL</h3>
-              <p className="text-2xl font-black font-mono tracking-wider pt-1">8295601</p>
-              <p className="text-[10px] text-orange-100 font-semibold leading-relaxed">
-                Enjoy 1:130 conversion limits from USD directly into Kenya Shillings. Fully automatic, safe merchant setup.
+              <span className="text-[9px] font-mono font-bold bg-white/20 px-2 py-0.5 rounded-full">SECURE M-PESA PAYBILL</span>
+              <h3 className="text-sm font-black tracking-tight text-white leading-tight uppercase">PAY SECURELY WITH PAYBILL</h3>
+              <div className="space-y-1 pt-1.5">
+                <p className="text-sm text-orange-100 leading-none">Business No (Paybill): <strong className="text-base text-white font-mono tracking-wider bg-white/10 px-1.5 py-0.5 rounded font-black">247 247</strong></p>
+                <p className="text-sm text-orange-100 leading-none">Account Number: <strong className="text-base text-white font-mono tracking-wider bg-white/10 px-1.5 py-0.5 rounded font-black">628766</strong></p>
+              </div>
+              <p className="text-[10px] text-orange-500 bg-white px-2 py-1.5 rounded-xl font-bold mt-2 text-center shadow-md animate-pulse">
+                Verify and record instant setup delivery!
               </p>
             </div>
             

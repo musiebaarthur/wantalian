@@ -116,7 +116,7 @@ export default function CustomerCareChatbot() {
         {
           id: `ast-err-${Date.now()}`,
           role: "assistant",
-          content: "Habari! My system is experiencing a minor connectivity hiccup, but feel free to pay using M-Pesa Buy Goods **Till Number 8295601** (Wantalian Home Hub) or ask about our hot Aura Soundbar Pro!",
+          content: "Habari! My system is experiencing a minor connectivity hiccup, but feel free to pay securely using M-Pesa **Paybill 247 247** with Account Number **628766** or ask about our hot Aura Soundbar Pro!",
           timestamp: new Date()
         }
       ]);

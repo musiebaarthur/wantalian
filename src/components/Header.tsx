@@ -256,7 +256,7 @@ export default function Header({
                     <Wallet className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-bold text-neutral-800">1. Lipa Na M-Pesa Instructions</p>
-                      <p className="text-gray-500 leading-snug">Go to M-Pesa &gt; Lipa Na M-Pesa &gt; Buy Goods. Till: 8295601. Confirm with transaction code.</p>
+                      <p className="text-gray-500 leading-snug">Go to M-Pesa &gt; Lipa Na M-Pesa &gt; Paybill. Business No: 247 247, Account: 628766. Confirm with code.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-1.5">

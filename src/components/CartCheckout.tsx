@@ -988,7 +988,7 @@ export default function CartCheckout({
                 <div className="space-y-3 sm:col-span-2 bg-emerald-50/40 p-4 rounded-xl border border-emerald-100/50 anim-fade-in">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pb-2 border-b border-emerald-100/30">
                     <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wide">
-                      ⚡ Wantalian M-Pesa Paybill / Till Option
+                      ⚡ Wantalian M-Pesa Paybill Option
                     </span>
                     <span className="text-[10px] font-mono text-emerald-650 bg-emerald-100/50 px-2 py-0.5 rounded-full font-bold">
                       KSh Kenya Shillings Only
@@ -998,13 +998,16 @@ export default function CartCheckout({
                   {/* TILL NUMBER PROMPT */}
                   <div className="text-xs text-gray-750 space-y-1.5 leading-relaxed">
                     <p>
-                      1. Go to M-PESA, select <strong>Lipa Na M-PESA</strong>, then <strong>Buy Goods and Services</strong>.
+                      1. Go to M-PESA, select <strong>Lipa Na M-PESA</strong>, then <strong>Paybill</strong>.
                     </p>
                     <p>
-                      2. Enter Till Number: <strong className="text-emerald-700 text-sm font-mono tracking-widest bg-emerald-100/60 px-2 py-0.5 rounded">8295601</strong> <span className="text-[10px] text-gray-500">(Wantalian Home Hub)</span>
+                      2. Enter Business Number (Paybill): <strong className="text-emerald-700 text-sm font-mono tracking-widest bg-emerald-100/60 px-2 py-0.5 rounded">247 247</strong>
                     </p>
                     <p>
-                      3. Pay exactly: <strong className="text-gray-900 text-sm font-bold font-mono">KSh {totalBalance.toLocaleString()}</strong>
+                      3. Enter Account Number: <strong className="text-emerald-700 text-sm font-mono tracking-widest bg-emerald-100/60 px-2 py-0.5 rounded">628766</strong>
+                    </p>
+                    <p>
+                      4. Pay exactly: <strong className="text-gray-900 text-sm font-bold font-mono">KSh {totalBalance.toLocaleString()}</strong>
                     </p>
                     <p className="text-[11px] text-gray-500">
                       4. Copy the received M-Pesa transaction code (e.g. <strong>RK38JS92SF</strong>) and fill it in below to auto-verify!

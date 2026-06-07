@@ -1,9 +1,11 @@
-import { DollarSign, ShoppingCart, AlertTriangle, PackageOpen, LayoutDashboard, Truck } from "lucide-react";
+import { DollarSign, ShoppingCart, AlertTriangle, PackageOpen, LayoutDashboard, Truck, Download } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Order } from "../types";
+import { Order, Product } from "../types";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 interface AdminDashboardProps {
   orders: Order[];
+  products: Product[];
   onUpdateOrderStatus: (orderId: string, status: string) => Promise<void>;
 }
 
@@ -20,6 +22,7 @@ interface AnalyticsData {
 
 export default function AdminDashboard({
   orders,
+  products,
   onUpdateOrderStatus
 }: AdminDashboardProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -27,6 +30,158 @@ export default function AdminDashboard({
   const [activeTab, setActiveTab] = useState<"stats" | "orders">("stats");
 
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+
+  // Dynamic computation of Orders per Day
+  const ordersPerDayData = (() => {
+    const dayMap: { [dateStr: string]: number } = {};
+    
+    // Seed last 7 days to ensure a clean visual trend
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const label = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      dayMap[label] = 0;
+    }
+
+    // Populate actual orders counter
+    orders.forEach(ord => {
+      try {
+        const d = new Date(ord.date);
+        const label = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        if (dayMap[label] !== undefined) {
+          dayMap[label] += 1;
+        } else {
+          dayMap[label] = 1;
+        }
+      } catch (e) {
+        console.warn("Could not parse date:", ord.date);
+      }
+    });
+
+    // Make sorted list of dates
+    return Object.keys(dayMap).map(key => ({
+      date: key,
+      "Orders Count": dayMap[key]
+    }));
+  })();
+
+  // Compute total completed orders revenue (e.g. status === "delivered" or completed status)
+  const completedOrdersRevenue = orders
+    .filter(o => o.status === "delivered" || (o.status as string) === "completed")
+    .reduce((sum, o) => sum + (typeof o.total === "number" ? o.total : 0), 0);
+
+  const handleExportOrdersCSV = () => {
+    const headers = [
+      "Order ID",
+      "Date",
+      "Customer Name",
+      "Customer Email",
+      "Delivery Address",
+      "Card Last 4",
+      "Fulfillment Status",
+      "Item Count",
+      "Item Listing Details",
+      "Total Revenue (KSh)"
+    ];
+    
+    const rows = orders.map(ord => {
+      const itemDetails = (ord.items || []).map(it => `${it.name} (x${it.quantity})`).join("; ");
+      return [
+        ord.id,
+        new Date(ord.date).toLocaleString(),
+        ord.customerName,
+        ord.customerEmail,
+        ord.address,
+        ord.cardLast4 || "N/A",
+        ord.status,
+        (ord.items || []).reduce((sum, item) => sum + item.quantity, 0),
+        itemDetails,
+        ord.total
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(val => {
+        const str = String(val === null || val === undefined ? "" : val);
+        if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      }).join(","))
+    ].join("\r\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `wantalian_order_fulfillment_logs_${new Date().toISOString().split('T')[0]}.csv`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportProductsCSV = () => {
+    const headers = [
+      "Product ID",
+      "Product Name",
+      "Brand",
+      "Category",
+      "Current Retail Price (KSh)",
+      "Original Catalog Price (KSh)",
+      "Stock Level",
+      "Rating Score",
+      "Review Counts",
+      "Express Transit Guaranteed"
+    ];
+    
+    let pList = products || [];
+    if (pList.length === 0) {
+      try {
+        const cached = localStorage.getItem("wantalian_cached_products");
+        if (cached) {
+          pList = JSON.parse(cached);
+        }
+      } catch {}
+    }
+
+    const rows = pList.map(p => {
+      return [
+        p.id,
+        p.name,
+        p.brand || "N/A",
+        p.category,
+        p.price,
+        p.originalPrice || p.price,
+        p.stock,
+        p.rating || 5.0,
+        p.reviewsCount || 0,
+        p.isExpress ? "YES" : "NO"
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(val => {
+        const str = String(val === null || val === undefined ? "" : val);
+        if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      }).join(","))
+    ].join("\r\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `wantalian_product_catalog_data_${new Date().toISOString().split('T')[0]}.csv`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const fetchAnalytics = async () => {
     setLoading(true);
@@ -143,27 +298,53 @@ export default function AdminDashboard({
         </div>
 
         {/* TAB PILOT COREL */}
-        <div className="flex bg-gray-50 border border-gray-100 p-1 rounded-xl">
-          <button
-            onClick={() => setActiveTab("stats")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-              activeTab === "stats"
-                ? "bg-white text-gray-900 shadow-3xs"
-                : "text-gray-500 hover:text-gray-900"
-            }`}
-          >
-            Analytics & sales performance
-          </button>
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-              activeTab === "orders"
-                ? "bg-white text-gray-900 shadow-3xs"
-                : "text-gray-500 hover:text-gray-900"
-            }`}
-          >
-            Order fulfillment logs ({orders.length})
-          </button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex bg-gray-100/80 border border-gray-200/30 p-1 rounded-xl">
+            <button
+              id="admin-tab-stats"
+              onClick={() => setActiveTab("stats")}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                activeTab === "stats"
+                  ? "bg-white text-gray-900 shadow-3xs"
+                  : "text-gray-500 hover:text-gray-900"
+              }`}
+            >
+              Analytics & sales performance
+            </button>
+            <button
+              id="admin-tab-orders"
+              onClick={() => setActiveTab("orders")}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                activeTab === "orders"
+                  ? "bg-white text-gray-900 shadow-3xs"
+                  : "text-gray-500 hover:text-gray-900"
+              }`}
+            >
+              Order fulfillment logs ({orders.length})
+            </button>
+          </div>
+
+          {/* EXPORTS DOWNLOAD TOOLS */}
+          <div className="flex items-center gap-1.5">
+            <button
+              id="admin-export-orders-btn"
+              onClick={handleExportOrdersCSV}
+              className="flex items-center gap-1 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold uppercase tracking-wider rounded-xl border border-emerald-100 shadow-xs transition-all cursor-pointer hover:scale-102 active:scale-95"
+              title="Download Orders Log CSV"
+            >
+              <Download className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+              <span>Export Orders</span>
+            </button>
+            <button
+              id="admin-export-products-btn"
+              onClick={handleExportProductsCSV}
+              className="flex items-center gap-1 px-3 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-[11px] font-bold uppercase tracking-wider rounded-xl border border-neutral-200/50 shadow-xs transition-all cursor-pointer hover:scale-102 active:scale-95"
+              title="Download Products Catalog CSV"
+            >
+              <Download className="w-3.5 h-3.5 shrink-0 text-neutral-600" />
+              <span>Export Products</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -172,7 +353,7 @@ export default function AdminDashboard({
         <div className="space-y-6">
           {/* STATS HIGHLIGHT CARDS */}
           {analytics ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* REVENUE */}
               <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-xs space-y-2 relative overflow-hidden">
                 <div className="flex items-center justify-between">
@@ -187,7 +368,25 @@ export default function AdminDashboard({
                   KSh {analytics.totalRevenue.toLocaleString()}
                 </h3>
                 <p className="text-[10px] text-emerald-600 font-medium">
-                  +18.4% compared to standard month
+                  All active order values combined
+                </p>
+              </div>
+
+              {/* COMPLETED REVENUE */}
+              <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-xs space-y-2 relative overflow-hidden">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-teal-700">
+                    Completed Revenue
+                  </span>
+                  <div className="p-1.5 bg-teal-50 text-teal-600 rounded-lg">
+                    <DollarSign className="w-4 h-4 text-teal-600" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-extrabold text-teal-800 tracking-tight">
+                  KSh {completedOrdersRevenue.toLocaleString()}
+                </h3>
+                <p className="text-[10px] text-teal-600 font-medium">
+                  Delivered orders only
                 </p>
               </div>
 
@@ -351,6 +550,53 @@ export default function AdminDashboard({
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {/* NEW ROW: RECHARTS DAILY ORDERS TREND BAR CHART */}
+          {analytics && (
+            <div className="bg-white border border-gray-100 rounded-2xl shadow-xs p-5 space-y-4">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 tracking-tight flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 bg-emerald-600 rounded-full animate-pulse" />
+                  Order Volume Trend (Orders per Day)
+                </h3>
+                <p className="text-[11px] text-gray-400">
+                  Dynamic visual mapping of total orders processed across the calendar dates to monitor daily sales flow.
+                </p>
+              </div>
+
+              <div className="h-72 w-full bg-slate-50/50 rounded-xl border border-gray-100 p-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={ordersPerDayData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#888888" 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false} 
+                    />
+                    <YAxis 
+                      stroke="#888888" 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      allowDecimals={false}
+                    />
+                    <Tooltip 
+                      contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '11px', boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05)' }}
+                      labelStyle={{ fontWeight: 'bold', color: '#1e293b' }}
+                    />
+                    <Bar 
+                      dataKey="Orders Count" 
+                      fill="#059669" 
+                      radius={[4, 4, 0, 0]} 
+                      maxBarSize={40}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           )}
         </div>

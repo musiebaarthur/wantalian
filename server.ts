@@ -32,7 +32,7 @@ function loadStore(): StoreSchema {
 
   if (!fs.existsSync(STORE_FILE)) {
     const freshDb: StoreSchema = {
-       products: DEFAULT_PRODUCTS,
+       products: [],
        orders: [],
        notifications: [
          {
@@ -45,18 +45,26 @@ function loadStore(): StoreSchema {
          }
        ],
        logs: []
-    };
+     };
     fs.writeFileSync(STORE_FILE, JSON.stringify(freshDb, null, 2));
     return freshDb;
   }
 
   try {
     const raw = fs.readFileSync(STORE_FILE, "utf-8");
-    return JSON.parse(raw) as StoreSchema;
+    const parsed = JSON.parse(raw) as StoreSchema;
+    
+    // Purge any existing seed/demo products from database
+    const originalLen = parsed.products ? parsed.products.length : 0;
+    parsed.products = (parsed.products || []).filter(p => !p.id.startsWith("seed-prd-") && !["prod-1", "prod-2", "prod-3", "prod-4"].includes(p.id));
+    if (parsed.products.length !== originalLen) {
+      fs.writeFileSync(STORE_FILE, JSON.stringify(parsed, null, 2));
+    }
+    return parsed;
   } catch (err) {
     console.error("Error reading store file, resetting DB to defaults.", err);
     const freshDb: StoreSchema = {
-       products: DEFAULT_PRODUCTS,
+       products: [],
        orders: [],
        notifications: [],
        logs: []
@@ -705,7 +713,7 @@ We offer premium products like:
 4. Desk mats, Kinetic Watches, Commuter Packs, etc.
 
 Operational details to assist customers:
-- Payment Method: We support both Credit/Debit card and "Lipa Na M-PESA" (M-Pesa Till Number is 8295601 under Wantalian Home Hub) using Kenya Shillings directly.
+- Payment Method: We support both Credit/Debit card and "Lipa Na M-PESA" (M-Pesa Paybill is 247 247 and Account Number is 628766 under Wantalian Home Hub) using Kenya Shillings directly.
 - Delivery options: We deliver across Nairobi and all major counties in Kenya. Shipping options are standard or express delivery.
 - Return Policy: 30-day hassle-free returns on premium interior systems if items are in pristine original packaging.
 
@@ -732,10 +740,9 @@ Be friendly, conversational, enthusiastic, helpful, and professional. Speak with
       const input = lastMsgText.toLowerCase().trim();
       let reply = "";
 
-      if (input.includes("m-pesa") || input.includes("mpesa") || input.includes("pay") || input.includes("till") || input.includes("lipa")) {
+      if (input.includes("m-pesa") || input.includes("mpesa") || input.includes("pay") || input.includes("till") || input.includes("lipa") || input.includes("paybill")) {
         reply = `Habari! Paying is quick and easy at **Wantalian Home Hub**:
-- **Lipa Na M-PESA**: Use Buy Goods **Till Number 8295601** (registered as *Wantalian Home Hub*).
-- **Exchange Rate**: We use a fixed friendly rate of **1.00 USD = 130 KES**.
+- **Lipa Na M-PESA**: Use **Paybill 247 247** with Account Number **628766** (Wantalian Home Hub).
 - **Alternative**: We also accept all major local & international debit/credit cards at checkout!
 
 Let me know if you need help calculating your exact KES total for checkout! 🇰🇪✨`;
@@ -771,7 +778,7 @@ You can ask me questions about:
 How can I help you customize your hub today?`;
       } else {
         reply = `Habari! I am currently assisting you on offline backup mode due to minor system traffic, but I can definitely help:
-- **Lipa na M-Pesa**: Till **8295601** (Wantalian Home Hub).
+- **Lipa na M-Pesa**: Paybill **247 247**, Account Number **628766** (Wantalian Home Hub).
 - **Delivery**: Same-day Nairobi & 24-48 hour parcel delivery to all other Kenyan counties.
 - **Featured**: Aura Soundbar Pro (KSh 249,99) & Zenith Ergonomic Split Keyboard (KSh 189,00).
 

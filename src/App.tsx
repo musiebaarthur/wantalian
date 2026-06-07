@@ -29,6 +29,7 @@ export default function App() {
         // Clear out any legacy demo items automatically
         const cleaned = parsed.filter((p: any) => 
           p.vendorId !== "vendor-global" && 
+          !p.id.startsWith("seed-prd-") &&
           !["prod-1", "prod-2", "prod-3", "prod-4", "prod-5", "prod-6"].includes(p.id)
         );
         if (cleaned.length !== parsed.length) {
@@ -449,12 +450,14 @@ export default function App() {
             onAdjustStock={handleAdjustStockVendor}
             onDeleteProduct={handleDeleteProductVendor}
             notifications={notifications}
+            orders={orders}
           />
         )}
 
         {currentRole === "admin" && (
           <AdminDashboard
             orders={orders}
+            products={products}
             onUpdateOrderStatus={handleUpdateOrderStatusAdmin}
           />
         )}
